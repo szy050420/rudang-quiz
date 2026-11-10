@@ -840,6 +840,29 @@ body.in-session .frame { padding-bottom: 40px; }
   body::before { display: none; }
 }
 
+/* ---------------------------------------------------------------- boot / 首屏占位
+   单文件版把题库内联在 HTML 里，弱网下浏览器要先下完才渲染；
+   这段静态占位在脚本启动前就可见，别让用户对着白屏。 */
+.boot {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; min-height: 62vh; text-align: center;
+}
+.boot-mark {
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center;
+  border: 1.5px solid var(--red); color: var(--red);
+  font-family: var(--song); font-size: 26px; line-height: 1;
+  margin-bottom: 6px;
+  animation: boot-pulse 1.8s var(--ease) infinite;
+}
+.boot-title { font-family: var(--song); font-size: 20px; color: var(--ink); margin: 0; }
+.boot-sub { font-size: 13px; color: var(--ink-3); margin: 0; }
+.boot-hint { font-size: 12px; color: var(--ink-3); opacity: .8; }
+@keyframes boot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+
 </style>
 </head>
 <body>
@@ -847,7 +870,14 @@ body.in-session .frame { padding-bottom: 40px; }
 <div class="frame">
   <header class="masthead" id="masthead"></header>
   <nav class="tabbar" id="tabbar" aria-label="主导航"></nav>
-  <main id="view" tabindex="-1"></main>
+  <main id="view" tabindex="-1">
+    <div class="boot">
+      <span class="boot-mark" aria-hidden="true">党</span>
+      <p class="boot-title">入党考试复习搭子</p>
+      <p class="boot-sub">题库加载中——第一次打开会慢一点。</p>
+      <p class="boot-sub boot-hint">如果停在这里超过半分钟，点右上角刷新一次。</p>
+    </div>
+  </main>
   <footer class="colophon">
     <span>商务信息学院学生党建工作中心 · 复习资料</span>
     <span>进度只存在这台设备的浏览器里</span>
