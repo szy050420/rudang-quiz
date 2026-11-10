@@ -232,6 +232,9 @@ main:focus, main:focus-visible { outline: none; }
   border-top: 1px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }
+/* 答题/模考这类专注模式下收掉底栏，把整屏让给题目 */
+.tabbar[hidden] { display: none; }
+body.in-session .frame { padding-bottom: 40px; }
 .tab {
   flex: 1;
   min-height: var(--nav-h);
@@ -1079,7 +1082,8 @@ function renderChrome() {
     <a class="tab" href="#/${k}" data-tab="${k}" ${activeTab === k ? 'aria-current="page"' : ''}>
       <span class="tab-zh">${zh}</span><span class="tab-sub">${sub}</span>
     </a>`).join('') : '';
-  $('#tabbar').hidden = !state.who;
+  $('#tabbar').hidden = !state.who || !!session;
+  document.body.classList.toggle('in-session', !!session && !!state.who);
 
   const pool = state.who ? poolOf() : bank.questions;
   const seen = pool.filter((q) => state.seen[q.id]).length;
