@@ -1040,13 +1040,17 @@ function bootBar(frac) {
   bar.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
 }
 
-function bootFail(msg) {
+function bootText(t) {
   const sub = document.getElementById('boot-sub');
+  if (sub) sub.textContent = t;
+}
+
+function bootFail(msg) {
   const hint = document.getElementById('boot-hint');
   const bar = document.getElementById('boot-bar');
   const btn = document.querySelector('.boot-retry');
   if (bar) bar.remove();
-  if (sub) sub.textContent = '题库没加载下来。';
+  bootText('题库没加载下来。');
   if (hint) hint.textContent = msg || '多半是网络断了，重试一次通常就好。';
   if (btn) {
     btn.hidden = false;
@@ -1055,18 +1059,19 @@ function bootFail(msg) {
   }
 }
 
-function loadBank() {
-  const inline = document.getElementById('bank-data');
-  if (inline) {
-    try { return Promise.resolve(JSON.parse(inline.textContent)); }
-    catch (err) { return Promise.reject(new Error('题库 JSON 解析失败')); }
-  }
+/* 单次请求：45 秒超时，边下边报进度 */
+function fetchBank() {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', BANK_SRC, true);
     xhr.responseType = 'text';
-    xhr.timeout = 25000;
-    xhr.onprogress = (e) => { if (e.lengthComputable) bootBar(e.loaded / e.total); };
+    xhr.timeout = 45000;
+    xhr.onprogress = (e) => {
+      if (!e.lengthComputable) return;
+      const frac = e.loaded / e.total;
+      bootBar(frac);
+      bootText('正在加载题库… ' + Math.round(frac * 100) + '%');
+    };
     xhr.onload = () => {
       if (xhr.status < 200 || xhr.status >= 300) {
         reject(new Error('题库请求失败（HTTP ' + xhr.status + '）'));
@@ -1076,9 +1081,28 @@ function loadBank() {
       catch (err) { reject(new Error('题库格式损坏，刷新一次试试')); }
     };
     xhr.onerror = () => reject(new Error('网络中断，检查一下网络再试'));
-    xhr.ontimeout = () => reject(new Error('等了 25 秒还没下来，网络太慢了'));
+    xhr.ontimeout = () => reject(new Error('等了 45 秒还没下来，网络太慢了'));
     xhr.send();
   });
+}
+
+async function loadBank() {
+  const inline = document.getElementById('bank-data');
+  if (inline) {
+    try { return JSON.parse(inline.textContent); }
+    catch (err) { throw new Error('题库 JSON 解析失败'); }
+  }
+  // 弱网下第一次容易断在半路，静默重试一次再认输
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      return await fetchBank();
+    } catch (err) {
+      if (attempt === 2) throw err;
+      bootBar(0);
+      bootText('下载中断了，正在重试…');
+      await new Promise((r) => setTimeout(r, 800));
+    }
+  }
 }
 
 let bank;
